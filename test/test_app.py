@@ -1,6 +1,6 @@
-from transform_senstive_info import HashInformation
+from src.transform_senstive_info import HashInformation
 import pandas as pd
-from transform_basket import TransformBasket
+from src.transform_basket import TransformBasket
 
 import unittest.mock
 # content of test_sample.py

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "CI/CD pipeline to deploy to aws cloudformation stack from github hook"
+Description: "CI/CD pipeline to deploy to aws cloudformation stack from github action"
 Parameters:
   DeploymentBucket:
     Type: String
@@ -7,9 +7,9 @@ Parameters:
   DeploymentPackageKey:
     Type: String
     Description: Enter the name of the S3 key of your deployment package file is.
-  NotificationBucket:
+  S3CSVBucketName:
     Type: String
-    Description: S3 bucket that's used for the Lambda event notification
+    Description: S3 bucket that's used for the CSV to land
 Resources: 
   Team4lambdaFunctionIamRole:
     Type: AWS::IAM::Role
@@ -24,7 +24,7 @@ Resources:
           Action:
             - sts:AssumeRole
       Policies:
-        - PolicyName: LambdaLogsPolicy
+        - PolicyName: Team4CiCDRole
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -32,7 +32,7 @@ Resources:
                 Action:
                   - "s3:GetBucketNotification"
                   - "s3:PutBucketNotification"
-                Resource: !Sub "arn:aws:s3:::${NotificationBucket}"
+                Resource: !Sub "arn:aws:s3:::${S3CSVBucketName}"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
@@ -46,7 +46,7 @@ Resources:
     Properties:
       Description: "Lambda to handle the extract transform and load"
       FunctionName: team4-lambda-cf
-      Handler: lambda.handler
+      Handler: lambda_function.lambda_handler
       Layers: 
         - arn:aws:lambda:eu-west-1:336392948345:layer:AWSDataWrangler-Python39:5
         - arn:aws:lambda:eu-west-1:506555054152:layer:psycopg2:8
@@ -58,8 +58,6 @@ Resources:
         S3Bucket: !Ref DeploymentBucket
         S3Key: !Ref DeploymentPackageKey
 
-
-
   LambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
     Properties:
@@ -67,8 +65,8 @@ Resources:
       Action: "lambda:InvokeFunction"
       Principal: s3.amazonaws.com
       SourceAccount: !Ref "AWS::AccountId"
-      SourceArn: !Sub "arn:aws:s3:::${NotificationBucket}"
-  
+      SourceArn: !Sub "arn:aws:s3:::${S3CSVBucketName}"
+
   Team4NotificationFunction:
     Type: "AWS::Lambda::Function"
     Properties:
@@ -139,8 +137,9 @@ Resources:
 
   LambdaTrigger:
     Type: "Custom::LambdaTrigger"
+    DeletionPolicy : Retain
     DependsOn: LambdaInvokePermission
     Properties:
       ServiceToken: !GetAtt Team4NotificationFunction.Arn
       LambdaArn: !GetAtt Team4lambdaFunction.Arn
-      Bucket: !Ref NotificationBucket
+      Bucket: !Ref S3CSVBucketName
