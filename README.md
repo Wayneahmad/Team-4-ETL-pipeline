@@ -271,8 +271,17 @@ And here are the team responsible for creating this project.
 
 
 # Tests<a name="Tests"></a>
-Something will go here
+So far we have wrote unit tests for 4 of our transform functions
+To run a test run the command 
+- pytest -v
 
+The result should show as the following
+••
+test/test_app.py::test_get_unique_stores PASSED                                                                                         [ 25%]
+test/test_app.py::test_get_unique_customers PASSED                                                                                      [ 50%]
+test/test_app.py::test_hashed_card PASSED                                                                                               [ 75%]
+test/test_app.py::test_hashed_customer PASSED     
+••
 
 <br>
 <br>
